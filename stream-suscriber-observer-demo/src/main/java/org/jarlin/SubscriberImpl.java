@@ -8,7 +8,7 @@ import java.util.function.Function;
 @AllArgsConstructor
 public class SubscriberImpl<T> implements Subscriber<T> {
 
-    private final Function<T, String> mapper;
+    private final Function<T, String> mapper; //Acoplado
     private final String name;
 
     @Override
@@ -20,6 +20,6 @@ public class SubscriberImpl<T> implements Subscriber<T> {
 
     @Override
     public String getName() {
-        return this.getName();
+        return this.name;
     }
 }

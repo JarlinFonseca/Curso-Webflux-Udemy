@@ -16,7 +16,7 @@ public class Main {
 
         //Subscriber for stringStream
         final Subscriber<String> strSubs1 = new SubscriberImpl<>(
-                str -> "Length" + str.length(),
+                str -> "Length " + str.length(),
                 subsName1
         );
 
@@ -28,13 +28,13 @@ public class Main {
 
         //Subscriber for intStream
         final Subscriber<Integer> intSubs1 = new SubscriberImpl<>(
-                num -> "Value" + num,
+                num -> "Value " + num,
                 subsName3
         );
 
         //Subscriber for intStream
         final Subscriber<Integer> intSubs2 = new SubscriberImpl<>(
-                num -> "Square" + (num * num),
+                num -> "Square " + (num * num),
                 subsName4
         );
 
@@ -46,13 +46,13 @@ public class Main {
                 .subscribe(intSubs1)
                 .subscribe(intSubs2);
 
-        System.out.println("---[Strings]---");
+        log.info("---[Strings]---");
         stringStream.emit("hello world");
         stringStream.emit("this is a subscriber");
         stringStream.emit("reactive streams in java");
 
 
-        System.out.println("---[Numbers]---");
+        log.info("---[Numbers]---");
         intStream.emit(5);
         intStream.emit(10);
         intStream.emit(30);
@@ -60,7 +60,10 @@ public class Main {
 
         stringStream.unsubscribe(strSubs2);
         intStream.unsubscribe(intSubs1);
-        intStream.subscribe(intSubs2);
+        intStream.unsubscribe(intSubs2);
+
+
+        intStream.emit(1);
 
 
     }
