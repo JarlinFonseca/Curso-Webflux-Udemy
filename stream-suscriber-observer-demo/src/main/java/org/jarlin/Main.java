@@ -28,15 +28,39 @@ public class Main {
 
         //Subscriber for intStream
         final Subscriber<Integer> intSubs1 = new SubscriberImpl<>(
-                num -> "Square" + (num * num),
+                num -> "Value" + num,
                 subsName3
         );
 
         //Subscriber for intStream
         final Subscriber<Integer> intSubs2 = new SubscriberImpl<>(
-                num -> "Double" + (num + num),
+                num -> "Square" + (num * num),
                 subsName4
         );
+
+        stringStream
+                .subscribe(strSubs1)
+                .subscribe(strSubs2);
+
+        intStream
+                .subscribe(intSubs1)
+                .subscribe(intSubs2);
+
+        System.out.println("---[Strings]---");
+        stringStream.emit("hello world");
+        stringStream.emit("this is a subscriber");
+        stringStream.emit("reactive streams in java");
+
+
+        System.out.println("---[Numbers]---");
+        intStream.emit(5);
+        intStream.emit(10);
+        intStream.emit(30);
+        intStream.emit(3000);
+
+        stringStream.unsubscribe(strSubs2);
+        intStream.unsubscribe(intSubs1);
+        intStream.subscribe(intSubs2);
 
 
     }
