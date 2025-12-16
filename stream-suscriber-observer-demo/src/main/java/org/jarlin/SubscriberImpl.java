@@ -2,7 +2,6 @@ package org.jarlin;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.java.Log;
-
 import java.util.function.Function;
 
 @Log
