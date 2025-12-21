@@ -1,6 +1,7 @@
 package org.jarlin;
 
 import lombok.extern.java.Log;
+import org.jarlin.pipelines.PipelineSumAllPricesInDiscount;
 import org.jarlin.pipelines.PipelineTopSelling;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -40,6 +41,13 @@ public class Main {
                         System.out::println,
                         err -> log.info("Error: " + err.getMessage()),
                         () -> log.info("Top Selling Videogames retrieval complete!")
+                );
+
+        PipelineSumAllPricesInDiscount.getSumAllPricesInDiscount()
+                .subscribe(
+                        System.out::println,
+                        err -> log.info("Error: " + err.getMessage()),
+                        () -> log.info("Sum calculation complete!")
                 );
     }
 }
