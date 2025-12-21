@@ -5,7 +5,6 @@ import org.jarlin.models.Review;
 import reactor.core.publisher.Flux;
 
 public class PipelineAllComments {
-
     /*
         Return all comments of all reviews of all videogames
 
