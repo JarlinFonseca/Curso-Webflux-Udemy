@@ -1,6 +1,7 @@
 package org.jarlin;
 
 import lombok.extern.java.Log;
+import org.jarlin.pipelines.PipelineAllComments;
 import org.jarlin.pipelines.PipelineSumAllPricesInDiscount;
 import org.jarlin.pipelines.PipelineTopSelling;
 import reactor.core.publisher.Flux;
@@ -48,6 +49,13 @@ public class Main {
                         System.out::println,
                         err -> log.info("Error: " + err.getMessage()),
                         () -> log.info("Sum calculation complete!")
+                );
+
+        PipelineAllComments.getAllReviewsComments()
+                .subscribe(
+                        System.out::println,
+                        err -> log.info("Error: " + err.getMessage()),
+                        () -> log.info("All comments retrieval complete!")
                 );
     }
 }
