@@ -1,4 +1,4 @@
-package org.jarlin.model;
+package org.jarlin.models;
 
 public enum Console {
     XBOX,

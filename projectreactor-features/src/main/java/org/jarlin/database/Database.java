@@ -1,8 +1,8 @@
 package org.jarlin.database;
 
-import org.jarlin.model.Console;
-import org.jarlin.model.Review;
-import org.jarlin.model.Videogame;
+import org.jarlin.models.Console;
+import org.jarlin.models.Review;
+import org.jarlin.models.Videogame;
 import reactor.core.publisher.Flux;
 
 import java.util.Arrays;
@@ -11,7 +11,7 @@ import java.util.List;
 
 public class Database {
 
-    public static Flux<Videogame> getVideogamesFlux() {
+    public static Flux<Videogame> getDataAsFlux() {
         List<Videogame> videogames = Arrays.asList(
 
 

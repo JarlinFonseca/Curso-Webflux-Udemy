@@ -1,4 +1,4 @@
-package org.jarlin.model;
+package org.jarlin.models;
 
 import lombok.Builder;
 import lombok.Data;

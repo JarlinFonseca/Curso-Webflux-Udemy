@@ -1,4 +1,4 @@
-package org.jarlin.model;
+package org.jarlin.models;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
