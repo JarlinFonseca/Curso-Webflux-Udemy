@@ -57,5 +57,23 @@ public class Main {
                         err -> log.info("Error: " + err.getMessage()),
                         () -> log.info("All comments retrieval complete!")
                 );
+
+
+        Flux<String> fluxA  = Flux.just("1", "2");  //From reactive mongo
+        Flux<String> fluxB  = Flux.just("A", "B", "C"); //From WebClient
+
+        Flux<String> combinedFlux = fluxA.flatMap(
+                strA -> fluxB.map(strB -> strA + "-"+ strB)
+        );
+
+        combinedFlux
+                .map(String::toLowerCase)
+                .doOnNext(System.out::println)
+                .subscribe();
+
+
     }
+
+
+
 }
