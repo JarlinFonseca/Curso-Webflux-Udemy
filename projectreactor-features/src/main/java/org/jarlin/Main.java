@@ -7,6 +7,8 @@ import org.jarlin.pipelines.PipelineTopSelling;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+
 @Log
 public class Main {
     public static void main(String[] args) {
@@ -72,8 +74,27 @@ public class Main {
                 .subscribe();
 
 
+        // Merge and concat
+        Flux<String> fluxA1  = Flux.just("1", "2", "3").delayElements(Duration.ofMillis(100));
+        Flux<String> fluxB2  = Flux.just("A", "B", "C").delayElements(Duration.ofMillis(50));
+
+
+        System.out.println("--- Using merge ---");
+
+        Flux<String> combinedFlux2 = Flux.merge(fluxA1, fluxB2);
+
+        combinedFlux2
+                .doOnNext(System.out::println)
+                .blockLast();
+
+        System.out.println("--- Using concat ---");
+        Flux<String> combinedFlux3 = Flux.concat(fluxA1, fluxB2);
+        combinedFlux3
+                .doOnNext(System.out::println)
+                .blockLast();
+
+
+
     }
-
-
 
 }
