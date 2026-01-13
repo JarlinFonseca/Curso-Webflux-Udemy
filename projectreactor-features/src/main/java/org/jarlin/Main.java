@@ -2,6 +2,7 @@ package org.jarlin;
 
 import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
+import org.jarlin.error_hanlder.FallbackService;
 import org.jarlin.error_hanlder.HandleDisabledVideogame;
 import org.jarlin.pipelines.PipelineAllComments;
 import org.jarlin.pipelines.PipelineSumAllPricesInDiscount;
@@ -122,6 +123,11 @@ public class Main {
 
         HandleDisabledVideogame.handleDisabledVideogamesDefault()
                 .subscribe(System.out::println);
+
+        System.out.println("--- Fallback Service Example ---");
+
+        FallbackService.callFallback()
+                .subscribe(v -> log.info(v.toString()));
     }
 
 }
