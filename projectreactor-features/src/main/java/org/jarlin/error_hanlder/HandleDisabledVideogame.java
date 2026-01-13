@@ -5,7 +5,22 @@ import org.jarlin.models.Console;
 import org.jarlin.models.Videogame;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
+
 public class HandleDisabledVideogame {
+
+    private static final Videogame DEFAULT_VIDEOGAME =
+            Videogame.builder()
+                    .name("Default")
+                    .price(0.0)
+                    .console(Console.ALL)
+                    .reviews(List.of(
+
+                    ))
+                    .officialWebsite("https://www.default.com")
+                    .isDiscount(true)
+                    .totalSold(0)
+                    .build();
 
     public static Flux<Videogame> handleDisabledVideogames() {
         return Database.getDataAsFlux()
@@ -25,5 +40,19 @@ public class HandleDisabledVideogame {
                 })
                 .cast(Videogame.class)
                 .distinct(Videogame::getName);
+    }
+
+
+    public static Flux<Videogame> handleDisabledVideogamesDefault() {
+        return Database.getDataAsFlux()
+                .handle((vg, sink) -> {
+                    if (Console.DISABLED == vg.getConsole()){
+                        sink.error(new RuntimeException("Videogame is disabled"));
+                        return;
+                    }
+                    sink.next(vg);
+                })
+                .onErrorReturn(DEFAULT_VIDEOGAME)
+                .cast(Videogame.class);
     }
 }

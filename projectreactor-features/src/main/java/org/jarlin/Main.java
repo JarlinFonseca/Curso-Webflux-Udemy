@@ -119,7 +119,7 @@ public class Main {
                 .blockLast();
 
 
-        HandleDisabledVideogame.handleDisabledVideogames()
+        HandleDisabledVideogame.handleDisabledVideogamesDefault()
                 .subscribe(System.out::println);
     }
 
