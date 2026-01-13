@@ -1,6 +1,7 @@
 package org.jarlin;
 
 import lombok.extern.java.Log;
+import org.jarlin.error_hanlder.HandleDisabledVideogame;
 import org.jarlin.pipelines.PipelineAllComments;
 import org.jarlin.pipelines.PipelineSumAllPricesInDiscount;
 import org.jarlin.pipelines.PipelineTopSelling;
@@ -118,7 +119,8 @@ public class Main {
                 .blockLast();
 
 
-
+        HandleDisabledVideogame.handleDisabledVideogames()
+                .subscribe(System.out::println);
     }
 
 }
