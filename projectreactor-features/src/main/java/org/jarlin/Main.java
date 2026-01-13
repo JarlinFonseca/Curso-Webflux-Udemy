@@ -95,6 +95,30 @@ public class Main {
 
 
 
+        // call ms shipments
+        Flux<String> fluxShipments = Flux.just("Shipment1", "Shipment2", "Shipment3")
+                .delayElements(Duration.ofMillis(120));
+        // call ms warehouses
+        Flux<String> fluxWarehouse = Flux.just("stock1", "stock2", "stock3")
+                .delayElements(Duration.ofMillis(50));
+        // call ms payments
+        Flux<String> fluxPayments = Flux.just("pay1", "pay2", "pay3")
+                .delayElements(Duration.ofMillis(150));
+        // call ms confirm
+        Flux<String> fluxConfirm = Flux.just("confirm1", "confirm2", "confirm3")
+                .delayElements(Duration.ofMillis(20));
+
+
+        //Flux<String> reportFlux = Flux.zip(fluxShipments, fluxWarehouse, (shipment, stock) -> shipment + ""+stock);
+
+        Flux<String> reportFlux = Flux.zip(fluxShipments, fluxWarehouse, fluxPayments, fluxConfirm)
+                        .map(tuple -> tuple.getT1() + " | " + tuple.getT2() + " | " + tuple.getT3() + " | " + tuple.getT4());
+        reportFlux
+                .doOnNext(System.out::println)
+                .blockLast();
+
+
+
     }
 
 }
