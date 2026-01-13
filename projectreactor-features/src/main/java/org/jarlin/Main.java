@@ -1,6 +1,7 @@
 package org.jarlin;
 
 import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.jarlin.error_hanlder.HandleDisabledVideogame;
 import org.jarlin.pipelines.PipelineAllComments;
 import org.jarlin.pipelines.PipelineSumAllPricesInDiscount;
@@ -10,7 +11,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
-@Log
+@Slf4j
 public class Main {
     public static void main(String[] args) {
 
