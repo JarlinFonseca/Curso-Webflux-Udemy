@@ -15,6 +15,15 @@ public class HandleDisabledVideogame {
                                 return;
                             }
                             sink.next(vg);
-                        });
+                        })
+                .onErrorResume( error -> {
+                    System.out.println("Error detected: " + error.getMessage());
+                    return Flux.merge(
+                            Database.getDataAsFlux(),
+                            Database.fluxAssassinsDefault
+                    );
+                })
+                .cast(Videogame.class)
+                .distinct(Videogame::getName);
     }
 }
