@@ -2,6 +2,7 @@ package org.jarlin;
 
 import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
+import org.jarlin.callbacks.CallbacksExample;
 import org.jarlin.error_hanlder.FallbackService;
 import org.jarlin.error_hanlder.HandleDisabledVideogame;
 import org.jarlin.pipelines.PipelineAllComments;
@@ -128,6 +129,15 @@ public class Main {
 
         FallbackService.callFallback()
                 .subscribe(v -> log.info(v.toString()));
+
+        System.out.println("--- Callbacks Example ---");
+
+        CallbacksExample.callbacks()
+                .subscribe(
+                        data -> log.debug(data.getName()), //onNext
+                        err -> log.error("Error: " + err.getMessage()), //onError
+                        () -> log.info("Finish subs" //onFinally
+                ));
     }
 
 }
