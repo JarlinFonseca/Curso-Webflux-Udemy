@@ -3,13 +3,17 @@ package org.jarlin;
 import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.jarlin.callbacks.CallbacksExample;
+import org.jarlin.database.Database;
 import org.jarlin.error_hanlder.FallbackService;
 import org.jarlin.error_hanlder.HandleDisabledVideogame;
+import org.jarlin.models.Console;
+import org.jarlin.models.Videogame;
 import org.jarlin.pipelines.PipelineAllComments;
 import org.jarlin.pipelines.PipelineSumAllPricesInDiscount;
 import org.jarlin.pipelines.PipelineTopSelling;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 import java.time.Duration;
 
@@ -138,6 +142,25 @@ public class Main {
                         err -> log.error("Error: " + err.getMessage()), //onError
                         () -> log.info("Finish subs" //onFinally
                 ));
+
+        Database.getDataAsFlux()
+                .filterWhen(vg -> Mono.deferContextual(ctx -> {
+                    var userId = ctx.getOrDefault("userId", "0");
+
+                    if(userId.startsWith("1")) {
+                        return Mono.just(videogameForConsole(vg, Console.XBOX));
+                    } else if(userId.startsWith("2")) {
+                        return Mono.just(videogameForConsole(vg, Console.PLAYSTATION));
+                    }
+
+                    return Mono.just(false);
+                }))
+                .contextWrite(Context.of("userId", "10020192"))
+                .subscribe(vg -> log.info("Recommended name {} console {}", vg.getName(), vg.getConsole()));
+    }
+
+    private static boolean videogameForConsole(Videogame game, Console console){
+        return game.getConsole() == console || game.getConsole() == Console.ALL;
     }
 
 }
