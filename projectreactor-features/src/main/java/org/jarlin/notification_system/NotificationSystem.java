@@ -3,12 +3,15 @@ package org.jarlin.notification_system;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jarlin.notification_system.models.NotificationEvent;
+import org.jarlin.notification_system.models.NotificationStatus;
 import org.jarlin.notification_system.service.EmailService;
 import org.jarlin.notification_system.service.NotificationService;
 import org.jarlin.notification_system.service.PhoneService;
 import org.jarlin.notification_system.service.TeamsService;
 import reactor.core.publisher.Sinks;
 
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -43,5 +46,34 @@ public class NotificationSystem {
 
         this.notificationCache = new ConcurrentHashMap<>();
 
+    }
+
+    private void updateEventStatus(NotificationEvent event) {
+        if(Objects.isNull(event.getStatus())){
+            event.setId(UUID.randomUUID().toString());
+            event.setStatus(NotificationStatus.PENDING);
+        }
+
+        this.notificationCache.put(event.getId(), event);
+    }
+
+    private void updateErrorStatus(NotificationEvent event, String channel, Throwable error) {
+        log.error("Error to send notification by: {}, for event: {}, error: {}", channel, event.getId(), error);
+        NotificationEvent cacheEvent = this.notificationCache.get(event.getId());
+
+        if(Objects.nonNull(cacheEvent)) {
+            cacheEvent.setStatus(NotificationStatus.FAILED);
+            this.historeySink.tryEmitNext(cacheEvent);
+        }
+    }
+
+    private void updateSuccess(NotificationEvent event, String channel) {
+        log.info("Success event by: {}, for event: {}", channel, event.getId());
+        NotificationEvent cacheEvent = this.notificationCache.get(event.getId());
+
+        if(Objects.nonNull(cacheEvent)) {
+            cacheEvent.setStatus(NotificationStatus.DELIVERED);
+            this.historeySink.tryEmitNext(cacheEvent);
+        }
     }
 }
