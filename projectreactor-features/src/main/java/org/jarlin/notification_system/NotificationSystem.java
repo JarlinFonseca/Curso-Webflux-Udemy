@@ -4,11 +4,15 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jarlin.notification_system.models.NotificationEvent;
 import org.jarlin.notification_system.models.NotificationStatus;
+import org.jarlin.notification_system.models.Priority;
 import org.jarlin.notification_system.service.EmailService;
 import org.jarlin.notification_system.service.NotificationService;
 import org.jarlin.notification_system.service.PhoneService;
 import org.jarlin.notification_system.service.TeamsService;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -48,6 +52,46 @@ public class NotificationSystem {
 
     }
 
+    private void setupTeamsProcessor(){
+        this.teamsSink.asMono()
+                .repeat()
+                .flatMap(event -> this.teamsService.sendNotification(event)
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .doOnSuccess(success -> this.updateSuccess(event, TEAMS_CHANNEL))
+                        .doOnError(error -> this.updateErrorStatus(event, TEAMS_CHANNEL, error))
+                        .onErrorResume(error -> Mono.just(false))
+                )
+                .subscribe();
+    }
+
+
+    private void setupEmailProcessor(){
+        this.emailSink.asMono()
+                .repeat()
+                .flatMap(event -> this.emailService.sendNotification(event)
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .doOnSuccess(success -> this.updateSuccess(event, EMAIL_CHANNEL))
+                        .doOnError(error -> this.updateErrorStatus(event, EMAIL_CHANNEL, error))
+                        .onErrorResume(error -> Mono.just(false))
+                )
+                .subscribe();
+    }
+
+    private void setupPhoneProcessor(){
+        this.phoneSink.asMono()
+                .repeat()
+                .flatMap(event -> this.phoneService.sendNotification(event)
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .doOnSuccess(success -> this.updateSuccess(event, PHONE_CHANNEL))
+                        .doOnError(error -> this.updateErrorStatus(event, PHONE_CHANNEL, error))
+                        .onErrorResume(error -> Mono.just(false))
+                )
+                .subscribe();
+    }
+
+
+
+
     private void updateEventStatus(NotificationEvent event) {
         if(Objects.isNull(event.getStatus())){
             event.setId(UUID.randomUUID().toString());
@@ -76,4 +120,40 @@ public class NotificationSystem {
             this.historeySink.tryEmitNext(cacheEvent);
         }
     }
+
+    private void routeEventByPriority(NotificationEvent event) {
+        this.teamsSink.tryEmitValue(event);
+
+        if(event.getPriority() == Priority.HIGH || event.getPriority() == Priority.MEDIUM) {
+            this.emailSink.tryEmitValue(event);
+        }
+
+        if(event.getPriority() == Priority.HIGH) {
+            this.phoneSink.tryEmitValue(event);
+        }
+
+    }
+
+    public void publishEvent(NotificationEvent event) {
+        this.mainEventSink.tryEmitNext(event);
+    }
+
+    public Flux<NotificationEvent> getNotificationHistory() {
+        return this.historeySink.asFlux();
+    }
+
+    public Mono<NotificationEvent> getNotificationById(String id) {
+      return Mono.justOrEmpty(this.notificationCache.get(id));
+    }
+
+    public Flux<NotificationEvent> retryFailedNotifications() {
+        return Flux.fromIterable(this.notificationCache.values())
+                .filter(event -> event.getStatus() == NotificationStatus.FAILED)
+                .doOnNext(this::publishEvent);
+    }
+
+
+    private static final String TEAMS_CHANNEL = "Teams";
+    private static final String EMAIL_CHANNEL = "Email";
+    private static final String PHONE_CHANNEL = "Phone";
 }
