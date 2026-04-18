@@ -19,7 +19,7 @@ import java.time.Duration;
 
 @Slf4j
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
 
         //Publisher Mono
         Mono<String> mono = Mono.just("Hello world")
@@ -69,11 +69,11 @@ public class Main {
                 );
 
 
-        Flux<String> fluxA  = Flux.just("1", "2");  //From reactive mongo
-        Flux<String> fluxB  = Flux.just("A", "B", "C"); //From WebClient
+        Flux<String> fluxA = Flux.just("1", "2");  //From reactive mongo
+        Flux<String> fluxB = Flux.just("A", "B", "C"); //From WebClient
 
         Flux<String> combinedFlux = fluxA.flatMap(
-                strA -> fluxB.map(strB -> strA + "-"+ strB)
+                strA -> fluxB.map(strB -> strA + "-" + strB)
         );
 
         combinedFlux
@@ -83,8 +83,8 @@ public class Main {
 
 
         // Merge and concat
-        Flux<String> fluxA1  = Flux.just("1", "2", "3").delayElements(Duration.ofMillis(100));
-        Flux<String> fluxB2  = Flux.just("A", "B", "C").delayElements(Duration.ofMillis(50));
+        Flux<String> fluxA1 = Flux.just("1", "2", "3").delayElements(Duration.ofMillis(100));
+        Flux<String> fluxB2 = Flux.just("A", "B", "C").delayElements(Duration.ofMillis(50));
 
 
         System.out.println("--- Using merge ---");
@@ -100,7 +100,6 @@ public class Main {
         combinedFlux3
                 .doOnNext(System.out::println)
                 .blockLast();
-
 
 
         // call ms shipments
@@ -120,7 +119,7 @@ public class Main {
         //Flux<String> reportFlux = Flux.zip(fluxShipments, fluxWarehouse, (shipment, stock) -> shipment + ""+stock);
 
         Flux<String> reportFlux = Flux.zip(fluxShipments, fluxWarehouse, fluxPayments, fluxConfirm)
-                        .map(tuple -> tuple.getT1() + " | " + tuple.getT2() + " | " + tuple.getT3() + " | " + tuple.getT4());
+                .map(tuple -> tuple.getT1() + " | " + tuple.getT2() + " | " + tuple.getT3() + " | " + tuple.getT4());
         reportFlux
                 .doOnNext(System.out::println)
                 .blockLast();
@@ -141,15 +140,15 @@ public class Main {
                         data -> log.debug(data.getName()), //onNext
                         err -> log.error("Error: " + err.getMessage()), //onError
                         () -> log.info("Finish subs" //onFinally
-                ));
+                        ));
 
         Database.getDataAsFlux()
                 .filterWhen(vg -> Mono.deferContextual(ctx -> {
                     var userId = ctx.getOrDefault("userId", "0");
 
-                    if(userId.startsWith("1")) {
+                    if (userId.startsWith("1")) {
                         return Mono.just(videogameForConsole(vg, Console.XBOX));
-                    } else if(userId.startsWith("2")) {
+                    } else if (userId.startsWith("2")) {
                         return Mono.just(videogameForConsole(vg, Console.PLAYSTATION));
                     }
 
@@ -157,9 +156,51 @@ public class Main {
                 }))
                 .contextWrite(Context.of("userId", "10020192"))
                 .subscribe(vg -> log.info("Recommended name {} console {}", vg.getName(), vg.getConsole()));
+
+        Flux<Integer> coldPublisher = Flux.range(1, 10);
+
+        log.info("Cold publisher");
+
+
+        log.info("Subs 1 subscribed");
+        coldPublisher.subscribe(n -> log.info("[s1]{}", n));
+
+
+        log.info("Subs 2 subscribed");
+        coldPublisher.subscribe(n -> log.info("[s2]{}", n));
+
+
+        log.info("Subs 3 subscribed");
+        coldPublisher.subscribe(n -> log.info("[s3]{}", n));
+
+
+
+        Flux<Long> hotPublisher = Flux.interval(Duration.ofSeconds(1))
+                        .publish()
+                                .autoConnect();
+
+        log.info("Hot publisher");
+
+
+        log.info("Subs 4 subscribed");
+        hotPublisher.subscribe(n -> log.info("[s4]{}", n));
+
+        Thread.sleep(2000);
+
+        log.info("Subs 5 subscribed");
+        hotPublisher.subscribe(n -> log.info("[s5]{}", n));
+
+        Thread.sleep(1000);
+
+
+        log.info("Subs 6 subscribed");
+        hotPublisher.subscribe(n -> log.info("[s6]{}", n));
+
+        Thread.sleep(10000);
+
     }
 
-    private static boolean videogameForConsole(Videogame game, Console console){
+    private static boolean videogameForConsole(Videogame game, Console console) {
         return game.getConsole() == console || game.getConsole() == Console.ALL;
     }
 
