@@ -24,7 +24,7 @@ public class NotificationSystem {
 
     private final Sinks.Many<NotificationEvent> mainEventSink;
     @Getter
-    private final Sinks.Many<NotificationEvent> historeySink;
+    private final Sinks.Many<NotificationEvent> historySink;
 
     private final NotificationService teamsService;
     private final NotificationService emailService;
@@ -38,7 +38,7 @@ public class NotificationSystem {
 
     public NotificationSystem() {
         this.mainEventSink = Sinks.many().multicast().onBackpressureBuffer();
-        this.historeySink = Sinks.many().replay().limit(50);
+        this.historySink = Sinks.many().replay().limit(50);
 
         this.teamsSink = Sinks.one();
         this.emailSink = Sinks.one();
@@ -50,15 +50,36 @@ public class NotificationSystem {
 
         this.notificationCache = new ConcurrentHashMap<>();
 
-        this.setupMainProcessor();
+        this.setupProcessingFlows();
 
     }
 
-    private void setupMainProcessor() {
+    public NotificationSystem(
+            NotificationService teamsService,
+            NotificationService emailService,
+            NotificationService phoneService) {
+        this.mainEventSink = Sinks.many().multicast().onBackpressureBuffer();
+        this.historySink = Sinks.many().replay().limit(50);
+
+        this.teamsSink = Sinks.one();
+        this.emailSink = Sinks.one();
+        this.phoneSink = Sinks.one();
+
+        this.teamsService = teamsService;
+        this.emailService = emailService;
+        this.phoneService = phoneService;
+
+        this.notificationCache = new ConcurrentHashMap<>();
+
+        setupProcessingFlows();
+    }
+
+
+    private void setupProcessingFlows() {
         this.mainEventSink.asFlux()
                 .doOnNext(event -> log.info("Received new event {}", event))
                 .doOnNext(this::updateEventStatus)
-                .doOnNext(this.historeySink::tryEmitNext)
+                .doOnNext(this.historySink::tryEmitNext)
                 .subscribe(this::routeEventByPriority);
 
             this.setupTeamsProcessor();
@@ -68,7 +89,6 @@ public class NotificationSystem {
 
     private void setupTeamsProcessor(){
         this.teamsSink.asMono()
-                .repeat()
                 .flatMap(event -> this.teamsService.sendNotification(event)
                         .subscribeOn(Schedulers.boundedElastic())
                         .doOnSuccess(success -> this.updateSuccess(event, TEAMS_CHANNEL))
@@ -81,7 +101,6 @@ public class NotificationSystem {
 
     private void setupEmailProcessor(){
         this.emailSink.asMono()
-                .repeat()
                 .flatMap(event -> this.emailService.sendNotification(event)
                         .subscribeOn(Schedulers.boundedElastic())
                         .doOnSuccess(success -> this.updateSuccess(event, EMAIL_CHANNEL))
@@ -93,7 +112,6 @@ public class NotificationSystem {
 
     private void setupPhoneProcessor(){
         this.phoneSink.asMono()
-                .repeat()
                 .flatMap(event -> this.phoneService.sendNotification(event)
                         .subscribeOn(Schedulers.boundedElastic())
                         .doOnSuccess(success -> this.updateSuccess(event, PHONE_CHANNEL))
@@ -122,7 +140,7 @@ public class NotificationSystem {
 
         if(Objects.nonNull(cacheEvent)) {
             cacheEvent.setStatus(NotificationStatus.FAILED);
-            this.historeySink.tryEmitNext(cacheEvent);
+            this.historySink.tryEmitNext(cacheEvent);
         }
     }
 
@@ -132,7 +150,7 @@ public class NotificationSystem {
 
         if(Objects.nonNull(cacheEvent)) {
             cacheEvent.setStatus(NotificationStatus.DELIVERED);
-            this.historeySink.tryEmitNext(cacheEvent);
+            this.historySink.tryEmitNext(cacheEvent);
         }
     }
 
@@ -154,7 +172,7 @@ public class NotificationSystem {
     }
 
     public Flux<NotificationEvent> getNotificationHistory() {
-        return this.historeySink.asFlux();
+        return this.historySink.asFlux();
     }
 
     public Mono<NotificationEvent> getNotificationById(String id) {

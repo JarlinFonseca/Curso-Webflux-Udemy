@@ -1,17 +1,22 @@
 package org.jarlin.notification_system;
 
 import org.jarlin.notification_system.models.NotificationEvent;
+import org.jarlin.notification_system.models.NotificationStatus;
+import org.jarlin.notification_system.models.Priority;
 import org.jarlin.notification_system.service.EmailService;
 import org.jarlin.notification_system.service.NotificationService;
 import org.jarlin.notification_system.service.PhoneService;
 import org.jarlin.notification_system.service.TeamsService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.*;
-import static org.mockito.AdditionalMatchers.*;
 
 public class NotificationSystemTest {
 
@@ -52,5 +57,42 @@ public class NotificationSystemTest {
                      this.phoneCallCount.incrementAndGet();
                         return Mono.just(true);
                 });
+
+            this.notificationSystem = new NotificationSystem(this.mockTeamService, this.mockEmailService, this.mockPhoneService);
+    }
+
+    @Test
+    @DisplayName("Should send events with LOW priority")
+    void testLowPriority(){
+        NotificationEvent event = this.createTestEvent(Priority.LOW);
+        this.notificationSystem.publishEvent(event);
+
+        this.sleep(500);
+
+        verify(this.mockTeamService, times(1)).sendNotification(any());
+        verify(this.mockEmailService, never()).sendNotification(any());
+        verify(this.mockPhoneService, never()).sendNotification(any());
+
+        assert(this.teamsCallCount.get() == 1);
+        assert(this.emailCallCount.get() == 0);
+        assert(this.phoneCallCount.get() == 0);
+    }
+
+    private NotificationEvent createTestEvent(Priority priority) {
+        return NotificationEvent.builder()
+                .id(UUID.randomUUID().toString())
+                .source("TEST")
+                .message("Test msg with priority: " + priority.toString())
+                .priority(priority)
+                .timestamp(LocalDateTime.now())
+                .status(NotificationStatus.PENDING)
+                .build();
+    }
+    private void sleep(long mills) {
+        try {
+            Thread.sleep(mills);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
