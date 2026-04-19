@@ -50,6 +50,20 @@ public class NotificationSystem {
 
         this.notificationCache = new ConcurrentHashMap<>();
 
+        this.setupMainProcessor();
+
+    }
+
+    private void setupMainProcessor() {
+        this.mainEventSink.asFlux()
+                .doOnNext(event -> log.info("Received new event {}", event))
+                .doOnNext(this::updateEventStatus)
+                .doOnNext(this.historeySink::tryEmitNext)
+                .subscribe(this::routeEventByPriority);
+
+            this.setupTeamsProcessor();
+            this.setupEmailProcessor();
+            this.setupPhoneProcessor();
     }
 
     private void setupTeamsProcessor(){
@@ -84,6 +98,7 @@ public class NotificationSystem {
                         .subscribeOn(Schedulers.boundedElastic())
                         .doOnSuccess(success -> this.updateSuccess(event, PHONE_CHANNEL))
                         .doOnError(error -> this.updateErrorStatus(event, PHONE_CHANNEL, error))
+                        .retry(3)
                         .onErrorResume(error -> Mono.just(false))
                 )
                 .subscribe();
