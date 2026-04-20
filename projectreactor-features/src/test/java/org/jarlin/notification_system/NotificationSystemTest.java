@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.*;
 
-public class NotificationSystemTest {
+ class NotificationSystemTest {
 
     private NotificationService mockTeamService;
     private NotificationService mockEmailService;
@@ -125,8 +125,8 @@ public class NotificationSystemTest {
     }
 
     @Test
-    @DisplayName("ShouldRetry3AttemptsWhenPhoneServiceFails")
-    void TestRetryPhoneAttempts(){
+    @DisplayName("Should retry 3 attempts when phone service fail")
+    void testRetryPhoneAttempts(){
 
         AtomicInteger attempts = new AtomicInteger(0);
 
@@ -144,7 +144,7 @@ public class NotificationSystemTest {
         NotificationEvent event = this.createTestEvent(Priority.HIGH);
         this.notificationSystem.publishEvent(event);
 
-        this.sleep(2000);
+        this.sleep(500);
         assert attempts.get() >= 3;
         assert this.phoneCallCount.get() == 1;
     }
