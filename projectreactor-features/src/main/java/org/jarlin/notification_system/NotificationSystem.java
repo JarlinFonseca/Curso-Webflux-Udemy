@@ -32,9 +32,9 @@ public class NotificationSystem {
     private final NotificationService emailService;
     private final NotificationService phoneService;
 
-    private final Sinks.One<NotificationEvent> teamsSink;
-    private final Sinks.One<NotificationEvent> emailSink;
-    private final Sinks.One<NotificationEvent> phoneSink;
+    private final Sinks.Many<NotificationEvent> teamsSink;
+    private final Sinks.Many<NotificationEvent> emailSink;
+    private final Sinks.Many<NotificationEvent> phoneSink;
 
     private final ConcurrentMap<String, NotificationEvent> notificationCache;
 
@@ -42,9 +42,9 @@ public class NotificationSystem {
         this.mainEventSink = Sinks.many().multicast().onBackpressureBuffer();
         this.historySink = Sinks.many().replay().limit(50);
 
-        this.teamsSink = Sinks.one();
-        this.emailSink = Sinks.one();
-        this.phoneSink = Sinks.one();
+        this.teamsSink = Sinks.many().multicast().onBackpressureBuffer();
+        this.emailSink = Sinks.many().multicast().onBackpressureBuffer();
+        this.phoneSink = Sinks.many().multicast().onBackpressureBuffer();
 
         this.teamsService = new TeamsService();
         this.emailService = new EmailService();
@@ -63,9 +63,9 @@ public class NotificationSystem {
         this.mainEventSink = Sinks.many().multicast().onBackpressureBuffer();
         this.historySink = Sinks.many().replay().limit(50);
 
-        this.teamsSink = Sinks.one();
-        this.emailSink = Sinks.one();
-        this.phoneSink = Sinks.one();
+        this.teamsSink = Sinks.many().multicast().onBackpressureBuffer();
+        this.emailSink = Sinks.many().multicast().onBackpressureBuffer();
+        this.phoneSink = Sinks.many().multicast().onBackpressureBuffer();
 
         this.teamsService = teamsService;
         this.emailService = emailService;
@@ -90,7 +90,7 @@ public class NotificationSystem {
     }
 
     private void setupTeamsProcessor(){
-        this.teamsSink.asMono()
+        this.teamsSink.asFlux()
                 .flatMap(event -> this.teamsService.sendNotification(event)
                         .subscribeOn(Schedulers.boundedElastic())
                         .doOnSuccess(success -> this.updateSuccess(event, TEAMS_CHANNEL))
@@ -102,7 +102,7 @@ public class NotificationSystem {
 
 
     private void setupEmailProcessor(){
-        this.emailSink.asMono()
+        this.emailSink.asFlux()
                 .flatMap(event -> this.emailService.sendNotification(event)
                         .subscribeOn(Schedulers.boundedElastic())
                         .doOnSuccess(success -> this.updateSuccess(event, EMAIL_CHANNEL))
@@ -113,7 +113,7 @@ public class NotificationSystem {
     }
 
     private void setupPhoneProcessor(){
-        this.phoneSink.asMono()
+        this.phoneSink.asFlux()
                 .flatMap(event ->
                         Mono.defer(() -> this.phoneService.sendNotification(event))
                         .subscribeOn(Schedulers.boundedElastic())
@@ -156,14 +156,14 @@ public class NotificationSystem {
     }
 
     private void routeEventByPriority(NotificationEvent event) {
-        this.teamsSink.tryEmitValue(event);
+        this.teamsSink.tryEmitNext(event);
 
         if(event.getPriority() == Priority.HIGH || event.getPriority() == Priority.MEDIUM) {
-            this.emailSink.tryEmitValue(event);
+            this.emailSink.tryEmitNext(event);
         }
 
         if(event.getPriority() == Priority.HIGH) {
-            this.phoneSink.tryEmitValue(event);
+            this.phoneSink.tryEmitNext(event);
         }
 
     }

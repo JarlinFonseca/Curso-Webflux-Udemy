@@ -16,9 +16,13 @@ import reactor.test.scheduler.VirtualTimeScheduler;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
  class NotificationSystemTest {
@@ -177,6 +181,39 @@ import static org.mockito.Mockito.*;
 
         StepVerifier.withVirtualTime( () -> testSystem.getNotificationHistory().take(1))
                 .expectNextMatches(element -> element.getStatus() == NotificationStatus.DELIVERED)
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should route many events by priority and keep only last 50 in history")
+    void shouldRouteManyEventsAndKeepLast50InHistory() {
+        int lowCount = 30;
+        int mediumCount = 40;
+        int highCount = 50;
+        int totalEvents = lowCount + mediumCount + highCount;
+
+        List<NotificationEvent> lowEvents = IntStream.range(0, lowCount)
+                .mapToObj(i -> this.createTestEvent(Priority.LOW))
+                .toList();
+        List<NotificationEvent> mediumEvents = IntStream.range(0, mediumCount)
+                .mapToObj(i -> this.createTestEvent(Priority.MEDIUM))
+                .toList();
+        List<NotificationEvent> highEvents = IntStream.range(0, highCount)
+                .mapToObj(i -> this.createTestEvent(Priority.HIGH))
+                .toList();
+
+        lowEvents.forEach(this.notificationSystem::publishEvent);
+        mediumEvents.forEach(this.notificationSystem::publishEvent);
+        highEvents.forEach(this.notificationSystem::publishEvent);
+
+        this.sleep(500);
+
+        assertEquals(totalEvents, this.teamsCallCount.get());
+        assertEquals(mediumCount + highCount, this.emailCallCount.get());
+        assertEquals(highCount, this.phoneCallCount.get());
+
+        StepVerifier.create(this.notificationSystem.getNotificationHistory().take(50).count())
+                .expectNext(50L)
                 .verifyComplete();
     }
 
