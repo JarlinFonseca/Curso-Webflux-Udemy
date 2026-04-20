@@ -124,6 +124,31 @@ public class NotificationSystemTest {
 
     }
 
+    @Test
+    @DisplayName("ShouldRetry3AttemptsWhenPhoneServiceFails")
+    void TestRetryPhoneAttempts(){
+
+        AtomicInteger attempts = new AtomicInteger(0);
+
+        when(this.mockPhoneService.sendNotification(any(NotificationEvent.class)))
+                .thenAnswer(invocation -> {
+                   int currentAttempt = attempts.incrementAndGet();
+                   if(currentAttempt <= 2) {
+                          return Mono.error(new RuntimeException("Error on send msg in Phone call"));
+                     } else {
+                          this.phoneCallCount.incrementAndGet();
+                          return Mono.just(true);
+                   }
+                });
+
+        NotificationEvent event = this.createTestEvent(Priority.HIGH);
+        this.notificationSystem.publishEvent(event);
+
+        this.sleep(2000);
+        assert attempts.get() >= 3;
+        assert this.phoneCallCount.get() == 1;
+    }
+
     private NotificationEvent createTestEvent(Priority priority) {
         return NotificationEvent.builder()
                 .id(UUID.randomUUID().toString())
