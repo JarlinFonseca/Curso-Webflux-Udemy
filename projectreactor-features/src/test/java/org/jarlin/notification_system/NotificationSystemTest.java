@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -67,8 +68,6 @@ public class NotificationSystemTest {
         NotificationEvent event = this.createTestEvent(Priority.LOW);
         this.notificationSystem.publishEvent(event);
 
-        this.sleep(500);
-
         verify(this.mockTeamService, times(1)).sendNotification(any());
         verify(this.mockEmailService, never()).sendNotification(any());
         verify(this.mockPhoneService, never()).sendNotification(any());
@@ -76,6 +75,53 @@ public class NotificationSystemTest {
         assert(this.teamsCallCount.get() == 1);
         assert(this.emailCallCount.get() == 0);
         assert(this.phoneCallCount.get() == 0);
+    }
+
+    @Test
+    @DisplayName("Should send events with MEDIUM priority")
+    void testMediumPriority(){
+        NotificationEvent event = this.createTestEvent(Priority.MEDIUM);
+        this.notificationSystem.publishEvent(event);
+
+        verify(this.mockTeamService, times(1)).sendNotification(any());
+        verify(this.mockEmailService, times(1)).sendNotification(any());
+        verify(this.mockPhoneService, never()).sendNotification(any());
+
+        assert(this.teamsCallCount.get() == 1);
+        assert(this.emailCallCount.get() == 1);
+        assert(this.phoneCallCount.get() == 0);
+    }
+
+    @Test
+    @DisplayName("Should send events with HIGH priority")
+    void testHighPriority(){
+        NotificationEvent event = this.createTestEvent(Priority.HIGH);
+        this.notificationSystem.publishEvent(event);
+
+        verify(this.mockTeamService, times(1)).sendNotification(any());
+        verify(this.mockEmailService, times(1)).sendNotification(any());
+        verify(this.mockPhoneService, times(1)).sendNotification(any());
+
+        assert(this.teamsCallCount.get() == 1);
+        assert(this.emailCallCount.get() == 1);
+        assert(this.phoneCallCount.get() == 1);
+    }
+
+    @Test
+    @DisplayName("Should history keep last 3 events")
+    void shouldHistoryKeep3Events(){
+        NotificationEvent testEvent1 = this.createTestEvent(Priority.LOW);
+        NotificationEvent testEvent2 = this.createTestEvent(Priority.MEDIUM);
+        NotificationEvent testEvent3 = this.createTestEvent(Priority.HIGH);
+
+        this.notificationSystem.publishEvent(testEvent1);
+        this.notificationSystem.publishEvent(testEvent2);
+        this.notificationSystem.publishEvent(testEvent3);
+
+        StepVerifier.create(notificationSystem.getNotificationHistory().take(3))
+                .expectNextCount(3)
+                .verifyComplete();
+
     }
 
     private NotificationEvent createTestEvent(Priority priority) {
