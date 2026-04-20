@@ -12,7 +12,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.test.scheduler.VirtualTimeScheduler;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -147,6 +149,35 @@ import static org.mockito.Mockito.*;
         this.sleep(500);
         assert attempts.get() >= 3;
         assert this.phoneCallCount.get() == 1;
+    }
+
+    @Test
+    @DisplayName("How to use virtual time")
+    void testVirtualTime(){
+        VirtualTimeScheduler scheduler = VirtualTimeScheduler.create();
+        NotificationService teams = mock(NotificationService.class);
+        NotificationService email = mock(NotificationService.class);
+        NotificationService phone = mock(NotificationService.class);
+
+
+        when(teams.sendNotification(any(NotificationEvent.class)))
+                .thenAnswer(inv  -> Mono.just(true).delayElement(Duration.ofMillis(150), scheduler));
+
+        when(email.sendNotification(any(NotificationEvent.class)))
+                .thenAnswer(inv  -> Mono.just(true).delayElement(Duration.ofMillis(300), scheduler));
+
+        when(phone.sendNotification(any(NotificationEvent.class)))
+                .thenAnswer(inv  -> Mono.just(true).delayElement(Duration.ofMillis(1000), scheduler));
+
+        NotificationSystem testSystem = new NotificationSystem(teams, email, phone);
+        NotificationEvent event = this.createTestEvent(Priority.HIGH);
+        testSystem.publishEvent(event);
+
+        scheduler.advanceTimeBy(Duration.ofMillis(1500));
+
+        StepVerifier.withVirtualTime( () -> testSystem.getNotificationHistory().take(1))
+                .expectNextMatches(element -> element.getStatus() == NotificationStatus.DELIVERED)
+                .verifyComplete();
     }
 
     private NotificationEvent createTestEvent(Priority priority) {
