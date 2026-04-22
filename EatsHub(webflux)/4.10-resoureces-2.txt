@@ -1,0 +1,34 @@
+public enum PriceEnum {
+    CHEAP, MEDIUM, EXPENSIVE;
+}
+
+public enum ReservationStatusEnum {
+    PENDING, CONFIRMED
+}
+
+public class Review {
+...
+}
+
+
+public class ReservationCollection {
+...
+}
+
+public class RestaurantCollection {
+..
+}
+
+@Builder
+public record Address (
+    String street,
+    String city,
+    String postalCode
+){ }
+
+
+public record ContactInfo(
+         String phone,
+         String email,
+         String website
+){ }
