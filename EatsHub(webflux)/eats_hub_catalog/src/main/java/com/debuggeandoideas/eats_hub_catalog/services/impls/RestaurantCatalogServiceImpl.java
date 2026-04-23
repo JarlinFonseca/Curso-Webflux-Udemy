@@ -2,14 +2,17 @@ package com.debuggeandoideas.eats_hub_catalog.services.impls;
 
 import com.debuggeandoideas.eats_hub_catalog.collections.RestaurantCollection;
 import com.debuggeandoideas.eats_hub_catalog.enums.PriceEnum;
+import com.debuggeandoideas.eats_hub_catalog.records.Address;
 import com.debuggeandoideas.eats_hub_catalog.repositories.RestaurantRepository;
 import com.debuggeandoideas.eats_hub_catalog.services.definitions.RestaurantCatalogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -17,6 +20,11 @@ import java.util.List;
 public class RestaurantCatalogServiceImpl implements RestaurantCatalogService {
 
     private final RestaurantRepository restaurantRepository;
+
+    @Override
+    public Flux<RestaurantCollection> readAll() {
+        return restaurantRepository.findAll();
+    }
 
     @Override
     public Flux<RestaurantCollection> readByCuisineType(String cuisineType) {
@@ -30,13 +38,12 @@ public class RestaurantCatalogServiceImpl implements RestaurantCatalogService {
     }
 
     @Override
-    public Flux<RestaurantCollection> readByName(String name) {
+    public Mono<RestaurantCollection> readByName(String name) {
         return this.restaurantRepository.findByNameStartingWithIgnoreCase(name)
                 .doOnSubscribe(subscription -> log.info("Init search start with param: {}", name))
-                .doOnComplete(() -> log.info("Search finish with param: {}", name))
                 .onErrorResume( throwable -> {
                     log.error(throwable.getMessage(), throwable);
-                    return Flux.empty();
+                    return Mono.empty();
                 });
     }
 
@@ -50,9 +57,24 @@ public class RestaurantCatalogServiceImpl implements RestaurantCatalogService {
 
     @Override
     public Flux<RestaurantCollection> readByCity(String city) {
-        return this.restaurantRepository.findByAddressCity(city)
-                .doOnNext(restaurant -> log.info("Found restaurant in city: {} with name: {}", city, restaurant.getName()))
-                .onErrorResume( throwable -> {
+        return this.restaurantRepository.findAll()
+                .map(RestaurantCollection::getAddress)
+                .filter(Objects::nonNull)
+                .map(Address::city)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collectList()
+                .flatMapMany(cities -> {
+                    if(cities.isEmpty()){
+                        log.info("No restaurants found in city: {}", city);
+                        return Flux.empty();
+                    }
+
+                    log.info("Init search in city: {}", city);
+                    return this.restaurantRepository.findByAddressCity(city)
+                            .doOnNext(restaurant -> log.info("Found restaurant in city: {}, with param: {}", city, restaurant.getName()));
+                })
+                .onErrorResume(throwable -> {
                     log.error(throwable.getMessage(), throwable);
                     return Flux.empty();
                 });
