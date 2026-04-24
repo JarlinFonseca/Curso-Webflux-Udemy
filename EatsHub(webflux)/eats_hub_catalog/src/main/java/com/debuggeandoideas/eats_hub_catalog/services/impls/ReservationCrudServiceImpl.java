@@ -78,6 +78,11 @@ public class ReservationCrudServiceImpl implements ReservationCrudService {
 
     @Override
     public Mono<Void> deleteReservation(UUID id) {
-        return null;
+        return this.reservationRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Reservation not found")))
+                .flatMap(reservation -> {
+                    log.info("Deleting reservation with id {}", reservation.getId());
+                    return this.reservationRepository.deleteById(id);
+                });
     }
 }
