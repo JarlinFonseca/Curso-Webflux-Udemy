@@ -39,12 +39,23 @@ public class ReservationCrudServiceImpl implements ReservationCrudService {
 
     @Override
     public Mono<ReservationCollection> readByReservationId(UUID id) {
-        return null;
+        return this.reservationRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Reservation not found")));
     }
 
     @Override
-    public Flux<ReservationCollection> readByRestaurantId(String restaurantId, ReservationStatusEnum status) {
-        return null;
+    public Flux<ReservationCollection> readByRestaurantId(UUID restaurantId, ReservationStatusEnum status) {
+        return this.restaurantRepository.findById(restaurantId) //Mono
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Restaurant not found")))
+                .flatMapMany(restaurant -> {
+                    if(Objects.isNull(status)){
+                        log.info("Reading reservations for restaurant {} with id {}", restaurant.getName(), restaurantId);
+                        return this.reservationRepository.findByRestaurantId(restaurantId.toString());
+                    }
+
+                    log.info("Reading reservations for restaurant {} with id {} and status {}", restaurant.getName(), restaurantId, status);
+                    return this.reservationRepository.findByRestaurantIdAndStatus(restaurantId.toString(), status);
+                });
     }
 
     @Override
