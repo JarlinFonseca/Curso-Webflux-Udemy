@@ -60,7 +60,20 @@ public class ReservationCrudServiceImpl implements ReservationCrudService {
 
     @Override
     public Mono<ReservationCollection> updateReservation(UUID id, ReservationCollection reservation) {
-        return null;
+        return this.reservationRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Reservation not found")))
+                .flatMap(existingReservation -> {
+
+                    log.info("Updating reservation with id {}", existingReservation.getId());
+                    existingReservation.setCustomerName(reservation.getCustomerName());
+                    existingReservation.setDate(reservation.getDate());
+                    existingReservation.setTime(reservation.getTime());
+                    existingReservation.setPartySize(reservation.getPartySize());
+                    existingReservation.setStatus(reservation.getStatus());
+                    existingReservation.setNotes(reservation.getNotes());
+
+                    return this.reservationRepository.save(existingReservation);
+                });
     }
 
     @Override
