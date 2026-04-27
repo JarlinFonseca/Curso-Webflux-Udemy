@@ -3,7 +3,7 @@ package com.debuggeandoideas.eats_hub_catalog.validators;
 import com.debuggeandoideas.eats_hub_catalog.clients.PlannerMSClient;
 import com.debuggeandoideas.eats_hub_catalog.collections.ReservationCollection;
 import com.debuggeandoideas.eats_hub_catalog.collections.RestaurantCollection;
-import com.debuggeandoideas.eats_hub_catalog.repositories.ReservationRepository;
+import com.debuggeandoideas.eats_hub_catalog.exeptions.BusinessException;
 import com.debuggeandoideas.eats_hub_catalog.repositories.RestaurantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,16 +27,48 @@ public class ReservationValidator {
         return null;
     }
 
-    public BusinessValidator<ReservationCollection> validateRestaurantNotClosed(ReservationCollection reservation){
-        return null;
+    public BusinessValidator<ReservationCollection> validateRestaurantNotClosed(){
+        return reservation -> {
+            final var restaurantId = UUID.fromString(reservation.getRestaurantId());
+
+            return this.restaurantRepository.findById(restaurantId)
+                    .switchIfEmpty(Mono.error(new BusinessException("Restaurant not found")))
+                    .flatMap(restaurant -> {
+                        if(this.isRestaurantClosed(restaurant, reservation.getTime())){
+                            return Mono.error(new BusinessException("Restaurant already closed"));
+                        }
+                        return Mono.empty();
+                    });
+        };
     }
 
-    public BusinessValidator<ReservationCollection> validateAvailability(ReservationCollection reservation){
-        return null;
+    public BusinessValidator<ReservationCollection> validateAvailability(){
+        return reservation -> {
+            final var restaurantId = UUID.fromString(reservation.getRestaurantId());
+
+            return this.plannerMSClient.verifyAvailability(reservation.getDate(), reservation.getTime(), restaurantId)
+                    .flatMap(isAvailable -> {
+                        if(Boolean.FALSE.equals(isAvailable)){
+                            return Mono.error(new BusinessException("Restaurant is not available"));
+                        }
+                        return Mono.empty();
+                    });
+        };
     }
 
-    public BusinessValidator<ReservationCollection> validateRestaurantIDBeforeUpdate(ReservationCollection reservation){
-        return null;
+    public BusinessValidator<ReservationCollection> validateRestaurantIDBeforeUpdate(){
+        return reservation -> {
+            final var restaurantId = UUID.fromString(reservation.getRestaurantId());
+
+            return this.restaurantRepository.findById(restaurantId)
+                    .switchIfEmpty(Mono.error(new BusinessException("Restaurant not found")))
+                    .flatMap(restaurant -> {
+                        if (!restaurant.getId().equals(UUID.fromString(reservation.getRestaurantId()))) {
+                            return Mono.error(new BusinessException("Restaurant ID must be the same as the original restaurant"));
+                        }
+                        return Mono.empty();
+                    });
+        };
     }
 
     private boolean isRestaurantClosed(RestaurantCollection restaurant, String reservationTime){
