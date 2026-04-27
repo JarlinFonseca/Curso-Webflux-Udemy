@@ -24,10 +24,22 @@ public class ReservationValidator {
     private final PlannerMSClient plannerMSClient;
 
     public <T>Mono<Void> applyValidations(T input, List<BusinessValidator<T>> validations){
-        return null;
+
+        if(Objects.isNull(validations) || validations.isEmpty()){
+            return Mono.empty();
+        }
+
+        log.info("Validations are not empty");
+        return validations.stream()
+                .reduce(
+                        Mono.empty(),
+                        (chain, validator) -> chain.then(validator.validate(input)),
+                        Mono::then
+                );
     }
 
     public BusinessValidator<ReservationCollection> validateRestaurantNotClosed(){
+        log.info("Validating restaurant not closed");
         return reservation -> {
             final var restaurantId = UUID.fromString(reservation.getRestaurantId());
 
@@ -43,6 +55,7 @@ public class ReservationValidator {
     }
 
     public BusinessValidator<ReservationCollection> validateAvailability(){
+        log.info("Validating availability");
         return reservation -> {
             final var restaurantId = UUID.fromString(reservation.getRestaurantId());
 
@@ -57,6 +70,7 @@ public class ReservationValidator {
     }
 
     public BusinessValidator<ReservationCollection> validateRestaurantIDBeforeUpdate(){
+        log.info("Validating restaurant ID before update");
         return reservation -> {
             final var restaurantId = UUID.fromString(reservation.getRestaurantId());
 
