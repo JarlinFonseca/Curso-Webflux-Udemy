@@ -35,6 +35,7 @@ public class RestaurantCollection {
     private String openHours;
     private String logoUrl;
     private ContactInfo contactInfo;
+    private String closeAt;
 
     private List<Review> reviews;
 
