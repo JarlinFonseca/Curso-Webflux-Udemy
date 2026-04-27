@@ -1,0 +1,7 @@
+package com.debuggeandoideas.eats_hub_catalog.exeptions;
+
+public class BusinessException extends RuntimeException {
+    public BusinessException(String message) {
+        super(message);
+    }
+}
