@@ -73,8 +73,7 @@ public class ReservationCrudServiceImpl implements ReservationCrudService {
     public Mono<ReservationCollection> updateReservation(UUID id, ReservationCollection reservation) {
         final var validations = List.of(
                 this.reservationValidator.validateRestaurantNotClosed(),
-                this.reservationValidator.validateAvailability(),
-                this.reservationValidator.validateRestaurantIDBeforeUpdate()
+                this.reservationValidator.validateAvailability()
         );
 
         return this.reservationRepository.findById(id)

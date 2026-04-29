@@ -32,28 +32,28 @@ public class EatsHubCatalogApplication implements CommandLineRunner {
 		SpringApplication.run(EatsHubCatalogApplication.class, args);
 	}
 
-	@Override
+	/*@Override
 	public void run(String... args) throws Exception {
-/*		this.repo.findAll()
+*//*		this.repo.findAll()
 				.doOnNext(System.out::println)
-				.subscribe();*/
+				.subscribe();*//*
 
-/*		this.restaurantCatalogService.readAll()
+*//*		this.restaurantCatalogService.readAll()
 				.doOnNext(System.out::println)
-				.subscribe();*/
+				.subscribe();*//*
 
 
-	/*	this.restaurantCatalogService.readByCuisineType("Mexican")
+	*//*	this.restaurantCatalogService.readByCuisineType("Mexican")
 				.doOnNext(System.out::println)
-				.subscribe();*/
+				.subscribe();*//*
 
-/*		this.restaurantCatalogService.readByName("Steakhouse 212")
+*//*		this.restaurantCatalogService.readByName("Steakhouse 212")
 				.doOnNext(System.out::println)
-				.subscribe();*/
+				.subscribe();*//*
 
-/*		this.restaurantCatalogService.readByPriceRangeIn(List.of(PriceEnum.CHEAP, PriceEnum.MEDIUM))
+*//*		this.restaurantCatalogService.readByPriceRangeIn(List.of(PriceEnum.CHEAP, PriceEnum.MEDIUM))
 				.doOnNext(System.out::println)
-				.subscribe();*/
+				.subscribe();*//*
 
 //		this.restaurantCatalogService.readByCity("New York")
 //				.doOnNext(System.out::println)
@@ -127,7 +127,42 @@ public class EatsHubCatalogApplication implements CommandLineRunner {
 		System.out.println("=== FINISHED RESERVATION DELETE TESTS ===");
 
 
+	}*/
+
+	@Override
+	public void run(String... args) throws Exception {
+
+
+		final var parrillaModernaID = "0ee619ba-e95f-4103-99f7-ee9cdf831d90";
+		final var unavailableID = "dfcbe98d-392b-4b93-9a49-27005223d15d";
+
+
+        /*final var michaelReservation = createTestReservation(
+				parrillaModernaID,
+                "Michael Davis",
+                2,
+                "2025-06-16",
+                "19:00",
+                "Anniversary dinner - romantic table"
+        );
+
+        final var michaelReservationCreated = reservationCrudService.createReservation(michaelReservation)
+        .block();
+
+        System.out.println("michaelReservationCreated: " + michaelReservationCreated.getId());*/
+
+		final var michaelReservationToUpdate = reservationCrudService.readByReservationId(UUID.fromString("6d5f1c96-c739-4774-b78d-612c2271c2b4")).block();
+
+		michaelReservationToUpdate.setTime("15:30");
+		michaelReservationToUpdate.setPartySize(3);
+
+		final var michaelReservationUpdated = this.reservationCrudService.updateReservation(UUID.fromString("6d5f1c96-c739-4774-b78d-612c2271c2b4"), michaelReservationToUpdate).block();
+
+		System.out.println("michael reservation updated: " + michaelReservationUpdated.getDate());
+		System.out.println("michael reservation updated: " + michaelReservationUpdated.getPartySize());
+
 	}
+
 
 	private ReservationCollection createTestReservation(String restaurantId, String customerName,
 	                                                    int partySize, String date, String time, String notes) {
