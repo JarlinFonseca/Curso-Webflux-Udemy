@@ -22,6 +22,7 @@ public interface ReservationMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "date", ignore = true)
     @Mapping(target = "time", ignore = true)
+    @Mapping(target = "staus", ignore = true)
     ReservationCollection toCollection(ReservationRequest request);
 
     default Flux<ReservationResponse> toResponseFlux(Flux<ReservationCollection> collections) {
@@ -46,9 +47,6 @@ public interface ReservationMapper {
             var dateTimeSplit = request.getDateTime().split(",", 2);
             collection.setDate(dateTimeSplit[0]);
             collection.setTime(dateTimeSplit[1]);
-        } else {
-            collection.setDate(null);
-            collection.setTime(null);
         }
     }
 }
