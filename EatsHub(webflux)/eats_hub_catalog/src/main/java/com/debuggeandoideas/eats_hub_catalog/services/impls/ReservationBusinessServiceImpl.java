@@ -4,8 +4,8 @@ import com.debuggeandoideas.eats_hub_catalog.dtos.requests.ReservationRequest;
 import com.debuggeandoideas.eats_hub_catalog.dtos.responses.ReservationResponse;
 import com.debuggeandoideas.eats_hub_catalog.enums.ReservationStatusEnum;
 import com.debuggeandoideas.eats_hub_catalog.mappers.ReservationMapper;
-import com.debuggeandoideas.eats_hub_catalog.repositories.ReservationRepository;
 import com.debuggeandoideas.eats_hub_catalog.services.definitions.ReservationBusinessService;
+import com.debuggeandoideas.eats_hub_catalog.services.definitions.ReservationCrudService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ReservationBusinessServiceImpl implements ReservationBusinessService {
 
-    private final ReservationRepository reservationRepository;
+    private final ReservationCrudService reservationCrudService;
     private final ReservationMapper reservationMapper;
 
     @Override
