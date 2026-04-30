@@ -18,10 +18,10 @@ public interface ReservationMapper {
     @Mapping(target = "dateTime", expression = "java(collection.getDate() + \",\" + collection.getTime())")
     ReservationResponse toResponse(ReservationCollection collection);
 
+    @Mapping(target = "date", expression = "java(extractDate(request.getDateTime()))")
+    @Mapping(target = "time", expression = "java(extractTime(request.getDateTime()))")
     @Mapping(target = "notes", source = "comment", defaultValue = "")
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "date", ignore = true)
-    @Mapping(target = "time", ignore = true)
     @Mapping(target = "staus", ignore = true)
     ReservationCollection toCollection(ReservationRequest request);
 
@@ -39,6 +39,14 @@ public interface ReservationMapper {
 
     default Mono<ReservationCollection> toCollectionMono(Mono<ReservationRequest> request) {
         return request.map(this::toCollection);
+    }
+
+    default String extractDate(String dateTime){
+        return dateTime.split(",")[0];
+    }
+
+    default String extractTime(String dateTime){
+        return dateTime.split(",")[1];
     }
 
     @AfterMapping
