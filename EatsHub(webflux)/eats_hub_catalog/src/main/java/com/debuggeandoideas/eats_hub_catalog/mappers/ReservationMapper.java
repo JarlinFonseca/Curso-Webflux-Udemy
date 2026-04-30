@@ -7,6 +7,7 @@ import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -22,7 +23,7 @@ public interface ReservationMapper {
     @Mapping(target = "time", expression = "java(extractTime(request.getDateTime()))")
     @Mapping(target = "notes", source = "comment", defaultValue = "")
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "staus", ignore = true)
+    @Mapping(target = "status", ignore = true)
     ReservationCollection toCollection(ReservationRequest request);
 
     default Flux<ReservationResponse> toResponseFlux(Flux<ReservationCollection> collections) {
@@ -41,10 +42,12 @@ public interface ReservationMapper {
         return request.map(this::toCollection);
     }
 
+    @Named("extractDate")
     default String extractDate(String dateTime){
         return dateTime.split(",")[0];
     }
 
+    @Named("extractTime")
     default String extractTime(String dateTime){
         return dateTime.split(",")[1];
     }
