@@ -24,26 +24,41 @@ public class ReservationBusinessServiceImpl implements ReservationBusinessServic
 
     @Override
     public Mono<String> createReservation(ReservationRequest reservation) {
-        return null;
+        log.info("Creating reservation");
+        return Mono.just(reservation)
+                .transform(reservationMapper::toCollectionMono)
+                .flatMap(this.reservationCrudService::createReservation)
+                .map(savedReservation -> {
+                    log.info("Creating reservation with id {} completed", savedReservation.getId());
+                    return savedReservation.getId().toString();
+                });
     }
 
     @Override
     public Mono<ReservationResponse> readByReservationId(UUID id) {
-        return null;
+        log.info("Reading reservation with id {}", id);
+        return this.reservationCrudService.readByReservationId(id)
+                .transform(reservationMapper::toResponseMono)
+                .doOnSuccess(reservation -> log.info("Reading reservation with id {} completed", id));
     }
 
     @Override
     public Flux<ReservationResponse> readByRestaurantId(UUID restaurantId, ReservationStatusEnum status) {
-        return null;
+        log.info("Reading reservations for restaurant {} with id {}", restaurantId, status);
+        return this.reservationCrudService.readByRestaurantId(restaurantId, status)
+                .transform(reservationMapper::toResponseFlux)
+                .doOnComplete(() -> log.info("Reading reservations for restaurant {} with id {} completed", restaurantId, status));
     }
 
     @Override
     public Mono<ReservationResponse> updateReservation(UUID id, ReservationRequest reservation) {
+        log.info("Updating reservation with id {}", id);
         return null;
     }
 
     @Override
     public Mono<Void> deleteReservation(UUID id) {
+        log.info("Deleting reservation with id {}", id);
         return null;
     }
 }
