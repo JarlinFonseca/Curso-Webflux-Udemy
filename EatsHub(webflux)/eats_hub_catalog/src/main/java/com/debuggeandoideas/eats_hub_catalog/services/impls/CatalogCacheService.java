@@ -25,27 +25,57 @@ public class CatalogCacheService {
     private final String KEY_PREFIX = "restaurant:";
 
     public Mono<RestaurantResponse> getCacheRestaurant(String key) {
-        return null;
+        return this.redisTemplate
+                .opsForValue()
+                .get(KEY_PREFIX + key)
+                .doOnNext(restaurantResponse -> log.info("Get cached restaurant: {}", restaurantResponse.getName()))
+                .doOnSubscribe(subscription -> log.info("Looking restaurant with key: {}", key));
     }
 
     public Mono<RestaurantResponse> cacheRestaurant(String key, RestaurantResponse restaurant) {
-        return null;
+        return this.redisTemplate
+                .opsForValue()
+                .set(KEY_PREFIX + key, restaurant, DEFAULT_TTL)
+                .thenReturn(restaurant)
+                .doOnNext(restaurantResponse -> log.info("Cached restaurant: {}", restaurantResponse.getName()))
+                .doOnSubscribe(subscription -> log.info("Caching restaurant with key: {}", key));
     }
 
     public Flux<RestaurantResponse> getCacheRestaurants(String key) {
-        return null;
+        return this.redisListTemplate
+                .opsForValue()
+                .get(KEY_PREFIX + key)
+                .flatMapMany(Flux::fromIterable)
+                .doOnNext(restaurantResponse -> log.info("Cache hit for list key: {}", key))
+                .doOnSubscribe(subscription -> log.info("Looking in cache for list key: {}", key));
+
     }
 
     public Flux<RestaurantResponse> cacheRestaurants(String key, Flux<RestaurantResponse> restaurants) {
-        return null;
+        return restaurants.collectList()
+                .flatMap(restaurantList -> this.redisListTemplate
+                        .opsForValue()
+                        .set(KEY_PREFIX + key, restaurantList, DEFAULT_TTL)
+                        .thenReturn(restaurantList))
+                .flatMapMany(Flux::fromIterable)
+                .doOnComplete(() -> log.info("Cached restaurant list with key: {}", key));
     }
 
     public Mono<Boolean> evictCacheRestaurant(String key) {
-        return null;
+        return this.redisTemplate
+                .delete(KEY_PREFIX + key)
+                .map(count -> count > 0)
+                .doOnNext(isDeleted -> {
+                    if(Boolean.TRUE.equals(isDeleted)) log.info("Cache evicted restaurant with key: {}", key);
+                });
     }
 
     public Mono<Void> evictCacheAllRestaurant() {
-        return null;
+        return this.redisListTemplate.getConnectionFactory()
+                .getReactiveConnection()
+                .serverCommands()
+                .flushAll()
+                .then(Mono.fromRunnable(() -> log.info("Cache evicted all restaurants")));
     }
 
     public static String buildNameKey(String name){

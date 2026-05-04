@@ -21,6 +21,7 @@ public class ReservationBusinessServiceImpl implements ReservationBusinessServic
 
     private final ReservationCrudService reservationCrudService;
     private final ReservationMapper reservationMapper;
+    private final CatalogCacheService restaurantCache;
 
     @Override
     public Mono<String> createReservation(ReservationRequest reservation) {
