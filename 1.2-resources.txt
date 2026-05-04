@@ -1,3 +1,0 @@
-https://github.com/alejandrocalderonhernandez/debuggeandoudeas-udemy-subsciber-observer-demo
-https://github.com/alejandrocalderonhernandez/debuggeandoudeas-udemy-project-reactor-features
-https://github.com/alejandrocalderonhernandez/debuggeandoudeas-udemy-spring-webflux/branches
