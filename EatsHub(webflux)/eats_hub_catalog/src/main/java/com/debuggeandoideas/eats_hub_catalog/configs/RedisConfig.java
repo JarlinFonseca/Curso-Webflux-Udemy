@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -96,7 +97,7 @@ public class RedisConfig {
         return new ReactiveRedisTemplate<>(connectionFactory, context);
     }
 
-    @EventListener
+    @EventListener(ApplicationReadyEvent.class)
     public void verifyRedisConnection() {
         log.info("Connecting successfully established");
         reactiveRedisTemplate(lettuceConnectionFactory()).opsForValue().get("test");
