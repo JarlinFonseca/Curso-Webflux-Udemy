@@ -21,6 +21,7 @@ public class RestaurantBusinessServiceImpl implements RestaurantBusinessService 
 
     private final RestaurantCatalogService restaurantCatalogService;
     private final RestaurantMapper restaurantMapper;
+    private final CatalogCacheService restaurantCache;
 
     @Override
     public Flux<RestaurantResponse> readAll() {
@@ -33,16 +34,28 @@ public class RestaurantBusinessServiceImpl implements RestaurantBusinessService 
     @Override
     public Flux<RestaurantResponse> readByCuisineType(String cuisineType) {
         log.info("Reading restaurants by cuisine type {}", cuisineType);
-        return this.restaurantCatalogService.readByCuisineType(cuisineType)
-                .transform(this.restaurantMapper::toResponseFlux)
+
+        final String cacheKey = CatalogCacheService.buildCuisineTypeKey(cuisineType);
+
+        return this.restaurantCache.getCacheRestaurants(cacheKey)
+                .switchIfEmpty(this.restaurantCatalogService.readByCuisineType(cuisineType)
+                        .transform(this.restaurantMapper::toResponseFlux)
+                        .transform(restaurantDB -> this.restaurantCache.cacheRestaurants(cacheKey, restaurantDB))
+                )
                 .doOnComplete(() -> log.info("Reading restaurants by cuisine type {} completed", cuisineType));
     }
 
     @Override
     public Mono<RestaurantResponse> readByName(String name) {
         log.info("Reading restaurant by name {}", name);
-        return this.restaurantCatalogService.readByName(name)
-                .transform(this.restaurantMapper::toResponseMono)
+
+        final String cacheKey = CatalogCacheService.buildNameKey(name);
+
+        return this.restaurantCache.getCacheRestaurant(cacheKey)
+                .switchIfEmpty(this.restaurantCatalogService.readByName(name)
+                        .transform(this.restaurantMapper::toResponseMono)
+                        .flatMap(restaurantDB -> this.restaurantCache.cacheRestaurant(cacheKey, restaurantDB))
+                )
                 .doOnSuccess(restaurant -> {
                     if(Objects.isNull(restaurant)){
                         log.info("Reading restaurant by name {} not found any restaurants", name);
@@ -55,16 +68,28 @@ public class RestaurantBusinessServiceImpl implements RestaurantBusinessService 
     @Override
     public Flux<RestaurantResponse> readByPriceRangeIn(List<PriceEnum> priceRange) {
         log.info("Reading restaurants by price range {}", priceRange);
-        return this.restaurantCatalogService.readByPriceRangeIn(priceRange)
-                .transform(this.restaurantMapper::toResponseFlux)
+
+        final String cacheKey = CatalogCacheService.buildPriceKey(priceRange);
+
+        return this.restaurantCache.getCacheRestaurants(cacheKey)
+                .switchIfEmpty(this.restaurantCatalogService.readByPriceRangeIn(priceRange)
+                        .transform(this.restaurantMapper::toResponseFlux)
+                        .transform(restaurantDB -> this.restaurantCache.cacheRestaurants(cacheKey, restaurantDB))
+                )
                 .doOnComplete(() -> log.info("Reading restaurants by price range {} completed", priceRange));
     }
 
     @Override
     public Flux<RestaurantResponse> readByCity(String city) {
         log.info("Reading restaurants by city {}", city);
-        return this.restaurantCatalogService.readByCity(city)
-                .transform(this.restaurantMapper::toResponseFlux)
+
+        final String cacheKey = CatalogCacheService.buildCityKey(city);
+
+        return this.restaurantCache.getCacheRestaurants(cacheKey)
+                .switchIfEmpty(this.restaurantCatalogService.readByCity(city)
+                        .transform(this.restaurantMapper::toResponseFlux)
+                        .transform(restaurantDB -> this.restaurantCache.cacheRestaurants(cacheKey, restaurantDB))
+                )
                 .doOnComplete(() -> log.info("Reading restaurants by city {} completed", city));
     }
 }
