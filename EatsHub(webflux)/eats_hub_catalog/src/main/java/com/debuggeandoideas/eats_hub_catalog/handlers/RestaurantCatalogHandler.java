@@ -20,7 +20,9 @@ public class RestaurantCatalogHandler {
     private final RestaurantBusinessService restaurantBusinessService;
 
     public Mono<ServerResponse> getAllRestaurants(ServerRequest serverRequest){
-        final var restaurantFlux = this.restaurantBusinessService.readAll();
+        final Integer page = serverRequest.queryParam("page").map(Integer::parseInt).orElse(0);
+        final Integer size = serverRequest.queryParam("size").map(Integer::parseInt).orElse(10);
+        final var restaurantFlux = this.restaurantBusinessService.readAll(page, size);
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(restaurantFlux, RestaurantResponse.class)

@@ -24,9 +24,10 @@ public class RestaurantBusinessServiceImpl implements RestaurantBusinessService 
     private final CatalogCacheService restaurantCache;
 
     @Override
-    public Flux<RestaurantResponse> readAll() {
-        log.info("Reading all restaurants");
-        return this.restaurantCatalogService.readAll()
+    public Flux<RestaurantResponse> readAll(Integer page, Integer size) {
+        log.info("Reading page {} of size {} all restaurants", page, size);
+
+        return this.restaurantCatalogService.readAll(page, size)
                 .transform(this.restaurantMapper::toResponseFlux)
                 .doOnComplete(() -> log.info("Reading all restaurants completed"));
     }
