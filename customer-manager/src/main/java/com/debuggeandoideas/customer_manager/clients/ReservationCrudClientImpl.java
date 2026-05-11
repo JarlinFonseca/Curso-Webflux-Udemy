@@ -78,6 +78,14 @@ public class ReservationCrudClientImpl implements ReservationCrudClient {
 
     @Override
     public Mono<Void> delete(String uuid) {
-        return null;
+        log.info("Deleting reservation with id: {}", uuid);
+        return this.webClient
+                .delete()
+                .uri(RESOURCE + "{reservationId}", uuid)
+                .retrieve()
+                .onStatus(HttpStatus.NOT_FOUND::equals,response ->MONO_400_ERROR)
+                .bodyToMono(Void.class)
+                .doOnSuccess(res -> log.info("Reservation deleted successfully with id: {}", uuid))
+                .doOnError(error -> log.error("Error deleting reservation with id: {}", uuid, error));
     }
 }
