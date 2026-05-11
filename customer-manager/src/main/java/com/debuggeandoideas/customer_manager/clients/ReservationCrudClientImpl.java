@@ -8,7 +8,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
+
+import java.time.Duration;
 
 @Service
 @Slf4j
@@ -56,7 +60,20 @@ public class ReservationCrudClientImpl implements ReservationCrudClient {
 
     @Override
     public Mono<ReservationResponse> update(String uuid, ReservationRequest reservationRequest) {
-        return null;
+        log.info("Updating reservation with id: {}", uuid);
+        return this.webClient
+                .put()
+                .uri(RESOURCE + "{reservationId}", uuid)
+                .bodyValue(reservationRequest)
+                .retrieve()
+                .onStatus(HttpStatus.NOT_FOUND::equals,response ->MONO_400_ERROR)
+                .onStatus(HttpStatusCode::is5xxServerError, response -> MONO_500_ERROR)
+                .bodyToMono(ReservationResponse.class)
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(5))
+                        .filter(throwable -> throwable instanceof WebClientResponseException.ServiceUnavailable)
+                )
+                .doOnSuccess(res -> log.info("Reservation updated: {}", res))
+                .doOnError(error -> log.error("Error updating reservation with id: {}", uuid, error));
     }
 
     @Override
