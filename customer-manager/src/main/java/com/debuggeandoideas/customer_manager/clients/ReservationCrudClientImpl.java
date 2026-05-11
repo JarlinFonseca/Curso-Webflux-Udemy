@@ -1,6 +1,7 @@
 package com.debuggeandoideas.customer_manager.clients;
 
 import com.debuggeandoideas.customer_manager.dtos.ReservationRequest;
+import com.debuggeandoideas.customer_manager.dtos.ReservationResourceResponse;
 import com.debuggeandoideas.customer_manager.dtos.ReservationResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ import java.time.Duration;
 public class ReservationCrudClientImpl implements ReservationCrudClient {
 
     private final WebClient webClient;
-    private static final String RESOURCE = "catalog/reservation/";
+    private static final String RESOURCE = "catalog/reservation";
     private static final String ERROR_MSJ_4XX = "Error while creating reservation";
     private static final String ERROR_MSJ_5XX = "Error while calling reservation service";
     private static final Mono<Throwable> MONO_400_ERROR = Mono.error(new IllegalArgumentException(ERROR_MSJ_4XX));
@@ -31,7 +32,7 @@ public class ReservationCrudClientImpl implements ReservationCrudClient {
     }
 
     @Override
-    public Mono<ReservationResponse> create(ReservationRequest reservationRequest) {
+    public Mono<String> create(ReservationRequest reservationRequest) {
         log.info("Creating reservation request with restaurant id: {}", reservationRequest.getRestaurantId());
 
         return this.webClient
@@ -41,7 +42,8 @@ public class ReservationCrudClientImpl implements ReservationCrudClient {
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError, response ->MONO_400_ERROR)
                 .onStatus(HttpStatusCode::is5xxServerError, response -> MONO_500_ERROR)
-                .bodyToMono(ReservationResponse.class)
+                .bodyToMono(ReservationResourceResponse.class)
+                .map(ReservationResourceResponse::getResource)
                 .doOnSuccess(res -> log.info("Reservation created successfully: {}", res));
     }
 
@@ -50,9 +52,10 @@ public class ReservationCrudClientImpl implements ReservationCrudClient {
         log.info("Reading reservation with id: {}", uuid);
         return this.webClient
                 .get()
-                .uri(RESOURCE + "{reservationId}", uuid)
+                .uri(RESOURCE + "/{reservationId}", uuid)
                 .retrieve()
                 .onStatus(HttpStatus.NOT_FOUND::equals,response ->MONO_400_ERROR)
+                .onStatus(HttpStatusCode::is5xxServerError, response -> MONO_500_ERROR)
                 .bodyToMono(ReservationResponse.class)
                 .doOnSuccess(res -> log.info("Reservation read successfully: {}", res))
                 .doOnError(error -> log.error("Error reading reservation with id: {}", uuid, error));
@@ -63,7 +66,7 @@ public class ReservationCrudClientImpl implements ReservationCrudClient {
         log.info("Updating reservation with id: {}", uuid);
         return this.webClient
                 .put()
-                .uri(RESOURCE + "{reservationId}", uuid)
+                .uri(RESOURCE + "/{reservationId}", uuid)
                 .bodyValue(reservationRequest)
                 .retrieve()
                 .onStatus(HttpStatus.NOT_FOUND::equals,response ->MONO_400_ERROR)
@@ -81,7 +84,7 @@ public class ReservationCrudClientImpl implements ReservationCrudClient {
         log.info("Deleting reservation with id: {}", uuid);
         return this.webClient
                 .delete()
-                .uri(RESOURCE + "{reservationId}", uuid)
+                .uri(RESOURCE + "/{reservationId}", uuid)
                 .retrieve()
                 .onStatus(HttpStatus.NOT_FOUND::equals,response ->MONO_400_ERROR)
                 .bodyToMono(Void.class)
