@@ -4,6 +4,7 @@ import com.debuggeandoideas.customer_manager.dtos.ReservationRequest;
 import com.debuggeandoideas.customer_manager.dtos.ReservationResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,6 +18,8 @@ public class ReservationCrudClientImpl implements ReservationCrudClient {
     private static final String RESOURCE = "catalog/reservation/";
     private static final String ERROR_MSJ_4XX = "Error while creating reservation";
     private static final String ERROR_MSJ_5XX = "Error while calling reservation service";
+    private static final Mono<Throwable> MONO_400_ERROR = Mono.error(new IllegalArgumentException(ERROR_MSJ_4XX));
+    private static final Mono<Throwable> MONO_500_ERROR = Mono.error(new IllegalArgumentException(ERROR_MSJ_5XX));
 
     @Autowired
     public ReservationCrudClientImpl(WebClient.Builder builder) {
@@ -32,15 +35,23 @@ public class ReservationCrudClientImpl implements ReservationCrudClient {
                 .uri(RESOURCE)
                 .bodyValue(reservationRequest)
                 .retrieve()
-                .onStatus(HttpStatusCode::is4xxClientError, response -> Mono.error(new IllegalArgumentException(ERROR_MSJ_4XX)))
-                .onStatus(HttpStatusCode::is5xxServerError, response -> Mono.error(new IllegalArgumentException(ERROR_MSJ_5XX)))
+                .onStatus(HttpStatusCode::is4xxClientError, response ->MONO_400_ERROR)
+                .onStatus(HttpStatusCode::is5xxServerError, response -> MONO_500_ERROR)
                 .bodyToMono(ReservationResponse.class)
                 .doOnSuccess(res -> log.info("Reservation created successfully: {}", res));
     }
 
     @Override
     public Mono<ReservationResponse> read(String uuid) {
-        return null;
+        log.info("Reading reservation with id: {}", uuid);
+        return this.webClient
+                .get()
+                .uri(RESOURCE + "{reservationId}", uuid)
+                .retrieve()
+                .onStatus(HttpStatus.NOT_FOUND::equals,response ->MONO_400_ERROR)
+                .bodyToMono(ReservationResponse.class)
+                .doOnSuccess(res -> log.info("Reservation read successfully: {}", res))
+                .doOnError(error -> log.error("Error reading reservation with id: {}", uuid, error));
     }
 
     @Override
