@@ -7,11 +7,12 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface CustomerService {
 
-    Mono<CustomerTable> createCustomer(CustomerTable customerTable);
+    Mono<CustomerTable> createCustomer(CustomerTable customerTable, Set<RoleTable> roleNames);
     Mono<Map<String, List<RoleTable>>> readRolesByEmail(String email);
     Mono<Void> deleteCustomer(Long id);
-    Mono<CustomerTable> updateRoleInCustomer(Long id, List<String> roleName, UpdateRoleOperation operation);
+    Mono<CustomerTable> updateRoleInCustomer(Long id, Set<String> roleNames, UpdateRoleOperation operation);
 }

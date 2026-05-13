@@ -9,10 +9,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -24,24 +27,104 @@ public class CustomerServiceImpl implements CustomerService {
     private final DatabaseClient databaseClient;
 
     @Override
-    public Mono<CustomerTable> createCustomer(CustomerTable customerTable) {
-        return null;
+    public Mono<CustomerTable> createCustomer(CustomerTable customerTable, Set<RoleTable> roleNames) {
+        log.info("Creating customer with email: {}", customerTable.getEmail());
+
+        return this.customerRepository.save(customerTable)
+                .flatMap(savedCustomer -> {
+                    return Flux.fromIterable(roleNames)
+                            .flatMap(roleName ->
+                                    this.databaseClient.sql(INSERT_BY_ROLE_QUERY)
+                                            .bind("customerId", savedCustomer.getId())
+                                            .bind("roleName", roleName)
+                                            .fetch()
+                                            .rowsUpdated()
+                                    )
+                            .then(Mono.just(savedCustomer));
+                })
+                .doOnSuccess(createdCustomer -> log.info("Customer created successfully: {}", createdCustomer.getEmail()))
+                .doOnError(error -> log.error("Error creating customer: {}", customerTable.getEmail(), error));
     }
 
     @Override
     public Mono<Map<String, List<RoleTable>>> readRolesByEmail(String email) {
-        return null;
+        log.info("Reading roles for customer with email: {}", email);
+
+         return this.customerRepository.findByEmail(email)
+                 .flatMap(customer ->
+                         this.databaseClient
+                                 .sql(FIND_BY_ROLE_QUERY)
+                                 .bind("customerId", customer.getId())
+                                 .map((row, metadata) -> {
+                                     RoleTable roleTable = new RoleTable();
+                                     roleTable.setName(row.get("name", String.class));
+                                     roleTable.setDescription(row.get("description", String.class));
+                                     return roleTable;
+                                 })
+                                 .all()
+                                 .collectList()
+                                 .map(roles -> Map.of(email, roles))
+                 )
+                 .switchIfEmpty(Mono.just(Map.of(email, List.of())));
     }
 
     @Override
     public Mono<Void> deleteCustomer(Long id) {
-        return null;
+        log.info("Deleting customer with id: {}", id);
+
+        return this.customerRepository.deleteById(id)
+                .doOnSuccess(obj -> log.info("Customer deleted successfully with id: {}", id))
+                .doOnError(error -> log.error("Error deleting customer with id: {}", id, error));
     }
 
     @Override
-    public Mono<CustomerTable> updateRoleInCustomer(Long id, List<String> roleName, UpdateRoleOperation operation) {
-        return null;
+    public Mono<CustomerTable> updateRoleInCustomer(Long id, Set<String> roleNames, UpdateRoleOperation operation) {
+        log.info("Updating roles for customer with id: {}", id);
+
+        return this.customerRepository.findById(id)
+                .flatMap(customerDB -> {
+                      if (operation == UpdateRoleOperation.ADD) {
+                          return Flux.fromIterable(roleNames)
+                                  .flatMap(roleName ->
+                                          this.databaseClient.sql(INSERT_BY_ROLE_QUERY)
+                                                  .bind("customerId", customerDB.getId())
+                                                  .bind("roleName", roleName)
+                                                  .fetch()
+                                                  .rowsUpdated()
+                                                  .onErrorResume(error -> {
+                                                      log.error("Error adding role {} to customer with id: {}", roleName, id, error);
+                                                      return Mono.just(0L);
+                                                  })
+                                  )
+                                  .then(Mono.just(customerDB));
+                      } else {
+                          return Flux.fromIterable(roleNames)
+                                  .flatMap(roleName ->
+                                          this.databaseClient.sql(DELETE_FROM_CUSTOMER_ROLE_QUERY)
+                                                  .bind("customerId", customerDB.getId())
+                                                  .bind("roleName", roleName)
+                                                  .fetch()
+                                                  .rowsUpdated()
+                                                  .onErrorResume(error -> {
+                                                      log.error("Error removing role {} from customer with id: {}", roleName, id, error);
+                                                      return Mono.just(0L);
+                                                  })
+                                  )
+                                  .then(Mono.just(customerDB));
+                      }
+                        });
     }
+
+    private static final String DELETE_FROM_CUSTOMER_ROLE_QUERY = """
+            DELETE FROM customer_role
+            WHERE customer_id = :customerId AND
+            role_name = :roleName
+            """;
+
+    private static final String INSERT_BY_ROLE_QUERY = """
+             INSERT INTO customer_role (customer_id, role_name)
+             VALUES (:customerId, :roleName)
+            """;
 
     private static final String FIND_BY_ROLE_QUERY = """
             SELECT r.name, r.description
