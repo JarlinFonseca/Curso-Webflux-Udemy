@@ -2,7 +2,6 @@ package com.debuggeandoideas.customer_manager.services;
 
 import com.debuggeandoideas.customer_manager.enums.UpdateRoleOperation;
 import com.debuggeandoideas.customer_manager.repositories.CustomerRepository;
-import com.debuggeandoideas.customer_manager.repositories.RoleRepository;
 import com.debuggeandoideas.customer_manager.tables.CustomerTable;
 import com.debuggeandoideas.customer_manager.tables.RoleTable;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,11 +21,10 @@ import java.util.Set;
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
-    private final RoleRepository roleRepository;
     private final DatabaseClient databaseClient;
 
     @Override
-    public Mono<CustomerTable> createCustomer(CustomerTable customerTable, Set<RoleTable> roleNames) {
+    public Mono<CustomerTable> createCustomer(CustomerTable customerTable, Set<String> roleNames) {
         log.info("Creating customer with email: {}", customerTable.getEmail());
 
         return this.customerRepository.save(customerTable)
@@ -129,7 +126,7 @@ public class CustomerServiceImpl implements CustomerService {
     private static final String FIND_BY_ROLE_QUERY = """
             SELECT r.name, r.description
             FROM role r
-            INNER JOIN customer_role cr ON r.id = cr.role_id
+            INNER JOIN customer_role cr ON cr.role_name = r.name
             WHERE cr.customer_id = :customerId
             """;
 }
