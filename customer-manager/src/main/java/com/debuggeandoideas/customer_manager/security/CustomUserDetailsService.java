@@ -31,7 +31,7 @@ public class CustomUserDetailsService implements ReactiveUserDetailsService {
                                             .toList();
 
                                     List<SimpleGrantedAuthority> authorities = roles.stream()
-                                            .map(role -> new SimpleGrantedAuthority("ROLE_"+ role))
+                                            .map(role -> new SimpleGrantedAuthority("ROLE_"+ role.getName()))
                                             .toList();
 
                                     return User.builder()
