@@ -40,6 +40,17 @@ public class JwtHelper {
         return (List<String>) claims.get("roles");
     }
 
+    public boolean validateJwt(String jwt) {
+        try {
+            final Claims claims = this.getClaimsFromJwt(jwt);
+            final Date expirationDate = claims.getExpiration();
+
+            return expirationDate.before(new Date());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public String getUsernameFromJwt(String jwt) {
         return this.getClaimsFromJwt(jwt).getSubject();
     }
