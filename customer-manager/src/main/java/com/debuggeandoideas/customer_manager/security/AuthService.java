@@ -16,7 +16,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtHelper jwtHelper;
 
-    private Mono<String> authenticate(String email, String password) {
+    public Mono<String> authenticate(String email, String password) {
         return this.customUserDetailsService.findByUsername(email)
                 .filter(userDetails -> this.passwordEncoder.matches(password, userDetails.getPassword()))
                 .map(userDetails -> {
