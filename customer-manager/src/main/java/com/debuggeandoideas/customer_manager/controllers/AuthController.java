@@ -33,7 +33,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping(path = "/login")
-    public Mono<ResponseEntity<LoginResponse>> login(LoginRequest loginRequest) {
+    public Mono<ResponseEntity<LoginResponse>> login(@RequestBody LoginRequest loginRequest) {
         return this.authService.authenticate(loginRequest.getEmail(), loginRequest.getPassword())
                 .flatMap(jwt ->
                         this.customerService.readRolesByEmail(loginRequest.getEmail())
