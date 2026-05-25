@@ -118,3 +118,16 @@ docker exec -it kafka-broker \
 docker exec -it kafka-broker \
   kafka-console-consumer.sh --bootstrap-server localhost:9092 \
   --topic rating-events --from-beginning
+
+
+
+docker exec -it kafka-broker \
+kafka-console-consumer.sh --bootstrap-server localhost:9092 \
+--topic rating-request-internal --from-beginning --property print.key=true
+
+
+docker exec -it kafka-broker \
+kafka-console-consumer.sh --bootstrap-server localhost:9092 \
+--topic rating-events --from-beginning --property print.key=true
+
+

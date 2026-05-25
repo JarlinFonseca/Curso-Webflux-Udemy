@@ -47,7 +47,7 @@ public class RatingStreamsConfig {
     public Function<Flux<Message<String>>, Flux<Message<String>>> ratingTransformer() {
         return flux -> flux.<Message<String>>handle((msg, sink) -> {
             try {
-                RatingRequest ratingRequest = objectMapper.convertValue(msg.getPayload(), RatingRequest.class);
+                RatingRequest ratingRequest = objectMapper.readValue(msg.getPayload(), RatingRequest.class);
                 RatingEvent ratingEvent = RatingEvent.builder()
                         .uuidCustomer(ratingRequest.getUuidCustomer().toString())
                         .idRestaurant(ratingRequest.getIdRestaurant().toString())
