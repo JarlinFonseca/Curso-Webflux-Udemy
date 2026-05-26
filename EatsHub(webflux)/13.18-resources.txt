@@ -1,0 +1,4 @@
+db.restaurants.find(
+  { _id: UUID("dfcbe98d-392b-4b93-9a49-27005223d15d") },
+  { reviews: 1, _id: 0 }
+);

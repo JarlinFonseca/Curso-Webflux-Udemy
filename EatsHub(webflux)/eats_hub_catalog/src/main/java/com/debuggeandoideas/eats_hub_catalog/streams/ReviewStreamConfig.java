@@ -32,7 +32,7 @@ public class ReviewStreamConfig {
     }
 
 
-    private Mono<Void> processMessage(Message<String> message){
+        private Mono<Object> processMessage(Message<String> message){
       return Mono.fromCallable(() -> {
           String payload = message.getPayload();
           return this.objectMapper.readValue(payload, ReviewEvent.class);
