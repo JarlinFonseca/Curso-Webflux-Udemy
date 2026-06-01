@@ -1,7 +1,6 @@
 package com.debuggeandoideas.eats_hub_catalog.routes;
 
 import com.debuggeandoideas.eats_hub_catalog.handlers.ReservationHandler;
-import com.debuggeandoideas.eats_hub_catalog.handlers.RestaurantCatalogHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RouterFunction;
